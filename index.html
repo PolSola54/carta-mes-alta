@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carta més alta</title>
+  <style>
+    body { text-align: center; font-family: Arial, sans-serif; }
+    .card-container { display: flex; justify-content: center; gap: 10px; margin: 20px; }
+    .card { width: 100px; height: 150px; background: url('cartes/back_red.svg') no-repeat center/cover; cursor: pointer; }
+    .card img { width: 100%; height: 100%; display: none; }
+    .selected img { display: block; }
+    .selected { background: none; }
+    #novaRonda { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    .card.disabled { cursor: not-allowed; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <h1>Carta més alta</h1>
+
+  <div id="jugador1">
+    <h3>Jugador 1</h3>
+    <div id="cartes-jugador1" class="card-container"></div>
+  </div>
+
+  <div id="jugador2">
+    <h3>Jugador 2</h3>
+    <div id="cartes-jugador2" class="card-container"></div>
+  </div>
+
+  <div id="missatge"></div>
+  <button id="novaRonda" disabled>Nova ronda</button>
+
+  <script>
+    const fullDeck = [
+      '2_of_hearts.svg', '3_of_hearts.svg', '4_of_hearts.svg', '5_of_hearts.svg',
+      '6_of_hearts.svg', '7_of_hearts.svg', '8_of_hearts.svg', '9_of_hearts.svg'
+    ];
+    const cardValues = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9 };
+
+    let player = null;          // Será 'jugador1' o 'jugador2'
+    let selection1 = null;      // Carta seleccionada por jugador1
+    let selection2 = null;      // Carta seleccionada por jugador2
+    let secondPlayerConnected = false;
+
+    const socket = new WebSocket('ws://62.164.223.13:43853');
+
+    socket.onopen = () => {
+      console.log('Conexió WebSocket establerta');
+    };
+
+    socket.onmessage = (event) => {
+      const message = event.data;
+      document.getElementById("missatge").textContent = message;
+
+      if (message === "Ets el jugador 1") {
+        player = 'jugador1';
+        // Jugador1 espera a que se conecte jugador2
+        secondPlayerConnected = false;
+        repartirCartes('cartes-jugador1', 'cartes/back_red.svg');
+        // Desactivar el botón de nueva ronda mientras se juega
+        document.getElementById("novaRonda").disabled = true;
+      } else if (message === "Ets el jugador 2") {
+        player = 'jugador2';
+        repartirCartes('cartes-jugador2', 'cartes/back_black.svg');
+        document.getElementById("novaRonda").disabled = true;
+      } else if (message === "Jugador 2 connectat") {
+        // Este mensaje lo recibe jugador1
+        if (player === 'jugador1') {
+          secondPlayerConnected = true;
+          document.getElementById("missatge").textContent = "Jugador 2 connectat. Ja pots jugar!";
+          enableCardSelection('cartes-jugador1');
+        }
+    } else if (message === "Repartint noves cartes...") {
+        // Reiniciar estado de selección
+        selection1 = null;
+        selection2 = null;
+    
+        // Repartir nuevas cartas
+        if (player === 'jugador1') {
+            repartirCartes('cartes-jugador1', 'cartes/back_red.svg');
+            enableCardSelection('cartes-jugador1'); // Habilitar selección
+        } else if (player === 'jugador2') {
+            repartirCartes('cartes-jugador2', 'cartes/back_black.svg');
+            enableCardSelection('cartes-jugador2'); // Habilitar selección
+        }
+    
+        document.getElementById("novaRonda").disabled = true;
+    }
+     else if (
+        message === "Empat" ||
+        message === "Jugador 1 guanya!" ||
+        message === "Jugador 2 guanya!"
+      ) {
+        // Cuando se muestra el resultado, se habilita el botón para nueva ronda
+        document.getElementById("novaRonda").disabled = false;
+      } else {
+        console.log(message);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('Error de connexió WebSocket:', error);
+    };
+
+    function getCardValue(card) {
+      return cardValues[card.split('_')[0]];
+    }
+
+    function shuffleDeck(deck) {
+      return deck.sort(() => Math.random() - 0.5).slice(0, 5);
+    }
+
+    function createCardElement(card, playerId, back) {
+      const cardDiv = document.createElement('div');
+      cardDiv.classList.add('card');
+      cardDiv.style.backgroundImage = `url('${back}')`;
+      cardDiv.dataset.card = card;
+
+      const img = document.createElement('img');
+      img.src = `cartes/${card}`;
+      cardDiv.appendChild(img);
+
+      cardDiv.addEventListener('click', function () {
+        if (player === 'jugador1' && playerId === 'cartes-jugador1') {
+          if (!secondPlayerConnected) {
+            alert("Esperant que el jugador 2 es connecti...");
+            return;
+          }
+          if (!selection1) {
+            selection1 = cardDiv;
+            socket.send(`selecciona|jugador1|${cardDiv.dataset.card}`);
+            disableCards('cartes-jugador1');
+          }
+        } else if (player === 'jugador2' && playerId === 'cartes-jugador2') {
+          if (!selection2) {
+            selection2 = cardDiv;
+            socket.send(`selecciona|jugador2|${cardDiv.dataset.card}`);
+            disableCards('cartes-jugador2');
+          }
+        }
+        cardDiv.classList.add('selected');
+        cardDiv.style.backgroundImage = 'none';
+      });
+
+      return cardDiv;
+    }
+
+    function disableCards(playerId) {
+      const cards = document.getElementById(playerId).getElementsByClassName('card');
+      for (let card of cards) {
+        card.classList.add('disabled');
+      }
+    }
+
+    function enableCardSelection(playerId) {
+      const cards = document.getElementById(playerId).getElementsByClassName('card');
+      for (let card of cards) {
+        card.classList.remove('disabled');
+      }
+    }
+
+    function repartirCartes(playerId, backCard) {
+      const container = document.getElementById(playerId);
+      container.innerHTML = ''; // Limpia las cartas anteriores
+      const shuffledDeck = shuffleDeck(fullDeck);
+      shuffledDeck.forEach(card => {
+        container.appendChild(createCardElement(card, playerId, backCard));
+      });
+    }
+
+    document.getElementById('novaRonda').addEventListener('click', () => {
+      socket.send('novaRonda');
+      document.getElementById('novaRonda').disabled = true;
+      document.getElementById("missatge").textContent = "Esperant resposta de l'altre jugador...";
+    });
+  </script>
+</body>
+</html>
