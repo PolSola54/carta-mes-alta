@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 43853 });
+const wss = new WebSocket.Server({ port: 8080 });
 
 let player1 = null;
 let player2 = null;
