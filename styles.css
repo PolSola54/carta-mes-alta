@@ -1,62 +1,73 @@
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-  }
-  
-  h1 {
-    background-color: #007bff;
-    color: #fff;
-    padding: 20px;
-    margin: 0;
-  }
-  
-  h3 {
-    margin: 10px 0;
-  }
-  
-  .cartes {
-    display: flex;
-    justify-content: center;
-    margin: 10px 0;
-  }
-  
-  .carta {
-    width: 60px;
-    height: 90px;
-    margin: 0 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #007bff;
-    color: white;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: transform 0.2s, background-color 0.2s;
-  }
-  
-  .carta:hover {
-    transform: scale(1.1);
-    background-color: #0056b3;
-  }
-  
-  .carta:active {
-    transform: scale(0.9);
-  }
-  
-  .carta[style*="pointer-events: none"] {
-    cursor: default;
-    background-color: #6c757d; /* Grisa per a cartes desactivades */
-  }
-  
-  #missatge {
-    margin-top: 20px;
-    font-size: 20px;
-    color: #333;
-    font-weight: bold;
-  }
-  
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  background-color: #007bff;
+  color: #fff;
+  padding: 20px;
+  margin: 0;
+}
+
+h3 {
+  margin: 10px 0;
+}
+
+.cartes {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.carta {
+  width: 60px;
+  height: 90px;
+  margin: 0 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.carta:hover {
+  transform: scale(1.1);
+}
+
+.carta:active {
+  transform: scale(0.9);
+}
+
+.carta[style*="pointer-events: none"] {
+  cursor: default;
+}
+
+#missatge {
+  margin-top: 20px;
+  font-size: 20px;
+  color: #333;
+  font-weight: bold;
+}
+
+.carta-seleccionada {
+  margin: 10px auto;
+  width: 80px;
+  height: 120px;
+}
+
+.carta-seleccionada img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
